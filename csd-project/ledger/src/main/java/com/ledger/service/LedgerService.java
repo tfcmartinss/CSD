@@ -25,7 +25,7 @@ public class LedgerService {
         }
 
         // Criar uma nova conta
-        Account account = new Account(request.getEmail(), request.getPublicKey(), 0);
+        Account account = new Account(request.getEmail(), request.getPublicKey(), request.getBalance());
         accountRepository.save(account);
         return "Account created";
     }

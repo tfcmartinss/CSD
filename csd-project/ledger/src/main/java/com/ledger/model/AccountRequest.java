@@ -4,6 +4,7 @@ public class AccountRequest {
 
     private String email;
     private String publicKey;
+    private int balance;
 
     // Getters and Setters
     public String getEmail() {
@@ -20,5 +21,13 @@ public class AccountRequest {
 
     public void setPublicKey(String publicKey) {
         this.publicKey = publicKey;
+    }
+
+    public int getBalance() {
+        return balance;
+    }
+
+    public void setBalance(int balance) {
+        this.balance = balance;
     }
 }
