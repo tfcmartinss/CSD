@@ -1,9 +1,11 @@
 package com.ledger.service;
 
 import com.ledger.model.Account;
+import com.ledger.model.Transaction;
 import com.ledger.model.AccountRequest;
 import com.ledger.model.TransferRequest;
 import com.ledger.repository.AccountRepository;
+import com.ledger.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +16,8 @@ public class LedgerService {
 
     @Autowired
     private AccountRepository accountRepository;
-
+    @Autowired
+    private TransactionRepository transactionRepository;
     public String createAccount(AccountRequest request) {
         // Verificar se a conta já existe
         if (accountRepository.existsByEmail(request.getEmail())) {
@@ -44,7 +47,9 @@ public class LedgerService {
                 // Salvar as contas atualizadas no banco de dados
                 accountRepository.save(fromAccount);
                 accountRepository.save(toAccount);
-
+                String transactionDetails = "Transferred " + request.getAmount() + " tokens from " + request.getFromEmail() + " to " + request.getToEmail();
+                Transaction transaction = new Transaction(fromAccount, toAccount, request.getAmount(), transactionDetails);
+                transactionRepository.save(transaction);
                 return "Transfer successful";
             } else {
                 return "Transfer failed: Insufficient balance";
