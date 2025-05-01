@@ -3,52 +3,65 @@ package com.ledger.service;
 import com.ledger.model.Account;
 import com.ledger.model.AccountRequest;
 import com.ledger.model.TransferRequest;
+import com.ledger.repository.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class LedgerService {
 
-    private Map<String, Account> accounts = new HashMap<>();
-    private Map<String, String> transactions = new HashMap<>(); // For simplicity, storing transactions as strings
+    @Autowired
+    private AccountRepository accountRepository;
 
     public String createAccount(AccountRequest request) {
-        if (accounts.containsKey(request.getEmail())) {
+        // Verificar se a conta já existe
+        if (accountRepository.existsByEmail(request.getEmail())) {
             return "Account already exists";
         }
-        accounts.put(request.getEmail(), new Account(request.getPublicKey(), 0));
+
+        // Criar uma nova conta
+        Account account = new Account(request.getEmail(), request.getPublicKey(), 0);
+        accountRepository.save(account);
         return "Account created";
     }
 
     public String transferTokens(TransferRequest request) {
-        Account fromAccount = accounts.get(request.getFromEmail());
-        Account toAccount = accounts.get(request.getToEmail());
-        if (fromAccount != null && toAccount != null && fromAccount.getBalance() >= request.getAmount()) {
-            fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
-            toAccount.setBalance(toAccount.getBalance() + request.getAmount());
-            String transaction = "Transferred " + request.getAmount() + " from " + request.getFromEmail() + " to " + request.getToEmail();
-            transactions.put(request.getFromEmail(), transaction);
-            transactions.put(request.getToEmail(), transaction);
-            return "Transfer successful";
+        // Encontrar as contas no banco de dados
+        Optional<Account> fromAccountOpt = accountRepository.findByEmail(request.getFromEmail());
+        Optional<Account> toAccountOpt = accountRepository.findByEmail(request.getToEmail());
+
+        if (fromAccountOpt.isPresent() && toAccountOpt.isPresent()) {
+            Account fromAccount = fromAccountOpt.get();
+            Account toAccount = toAccountOpt.get();
+
+            // Verificar se o saldo é suficiente
+            if (fromAccount.getBalance() >= request.getAmount()) {
+                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
+                toAccount.setBalance(toAccount.getBalance() + request.getAmount());
+
+                // Salvar as contas atualizadas no banco de dados
+                accountRepository.save(fromAccount);
+                accountRepository.save(toAccount);
+
+                return "Transfer successful";
+            } else {
+                return "Transfer failed: Insufficient balance";
+            }
         } else {
-            return "Transfer failed: Insufficient balance or account not found";
+            return "Transfer failed: Account not found";
         }
     }
 
     public int getBalance(String email) {
-        Account account = accounts.get(email);
-        return account != null ? account.getBalance() : -1;
-    }
-
-    public String listTransactions(String email) {
-        return transactions.getOrDefault(email, "No transactions found");
+        Optional<Account> accountOpt = accountRepository.findByEmail(email);
+        return accountOpt.map(Account::getBalance).orElse(-1);
     }
 
     public String deleteAccount(String email) {
-        if (accounts.remove(email) != null) {
-            transactions.remove(email);
+        if (accountRepository.existsByEmail(email)) {
+            accountRepository.deleteByEmail(email);
             return "Account deleted";
         } else {
             return "Account not found";
@@ -56,9 +69,13 @@ public class LedgerService {
     }
 
     public String updateAccount(AccountRequest request) {
-        Account account = accounts.get(request.getEmail());
-        if (account != null) {
+        Optional<Account> accountOpt = accountRepository.findByEmail(request.getEmail());
+
+        if (accountOpt.isPresent()) {
+            Account account = accountOpt.get();
             account.setPublicKey(request.getPublicKey());
+
+            accountRepository.save(account);
             return "Account updated";
         } else {
             return "Account not found";
@@ -66,12 +83,12 @@ public class LedgerService {
     }
 
     public String getAccountInfo(String email) {
-        Account account = accounts.get(email);
-        return account != null ? "Email: " + email + ", Public Key: " + account.getPublicKey() + ", Balance: " + account.getBalance() : "Account not found";
+        Optional<Account> accountOpt = accountRepository.findByEmail(email);
+        return accountOpt.map(account -> "Email: " + account.getEmail() + ", Public Key: " + account.getPublicKey() + ", Balance: " + account.getBalance())
+                .orElse("Account not found");
     }
-
     public boolean validateAccount(AccountRequest request) {
-        Account account = accounts.get(request.getEmail());
-        return account != null && account.getPublicKey().equals(request.getPublicKey());
+        Optional<Account> accountOpt = accountRepository.findByEmail(request.getEmail());
+        return accountOpt.isPresent() && accountOpt.get().getPublicKey().equals(request.getPublicKey());
     }
 }

@@ -28,11 +28,6 @@ public class LedgerController {
         return ledgerService.getBalance(email);
     }
 
-    @GetMapping("/list_transactions/{email}")
-    public String listTransactions(@PathVariable String email) {
-        return ledgerService.listTransactions(email);
-    }
-
     @DeleteMapping("/delete_account/{email}")
     public String deleteAccount(@PathVariable String email) {
         return ledgerService.deleteAccount(email);

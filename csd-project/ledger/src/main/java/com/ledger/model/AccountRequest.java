@@ -1,6 +1,7 @@
 package com.ledger.model;
 
 public class AccountRequest {
+
     private String email;
     private String publicKey;
 
