@@ -3,15 +3,15 @@ package com.ledger.controller;
 import com.ledger.model.AccountRequest;
 import com.ledger.model.TransferRequest;
 import com.ledger.service.LedgerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class LedgerController {
 
-    @Autowired
-    private LedgerService ledgerService;
+    private final LedgerService ledgerService;
 
     @PostMapping("/create_account")
     public String createAccount(@RequestBody AccountRequest request) {

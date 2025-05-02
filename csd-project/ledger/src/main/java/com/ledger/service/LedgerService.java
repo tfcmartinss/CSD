@@ -6,32 +6,30 @@ import com.ledger.model.AccountRequest;
 import com.ledger.model.TransferRequest;
 import com.ledger.repository.AccountRepository;
 import com.ledger.repository.TransactionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class LedgerService {
 
-    @Autowired
-    private AccountRepository accountRepository;
-    @Autowired
-    private TransactionRepository transactionRepository;
+
+    private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
+
     public String createAccount(AccountRequest request) {
-        // Verificar se a conta já existe
         if (accountRepository.existsByEmail(request.getEmail())) {
             return "Account already exists";
         }
 
-        // Criar uma nova conta
         Account account = new Account(request.getEmail(), request.getPublicKey(), request.getBalance());
         accountRepository.save(account);
         return "Account created";
     }
 
     public String transferTokens(TransferRequest request) {
-        // Encontrar as contas no banco de dados
         Optional<Account> fromAccountOpt = accountRepository.findByEmail(request.getFromEmail());
         Optional<Account> toAccountOpt = accountRepository.findByEmail(request.getToEmail());
 
@@ -39,12 +37,10 @@ public class LedgerService {
             Account fromAccount = fromAccountOpt.get();
             Account toAccount = toAccountOpt.get();
 
-            // Verificar se o saldo é suficiente
             if (fromAccount.getBalance() >= request.getAmount()) {
                 fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
                 toAccount.setBalance(toAccount.getBalance() + request.getAmount());
 
-                // Salvar as contas atualizadas no banco de dados
                 accountRepository.save(fromAccount);
                 accountRepository.save(toAccount);
                 String transactionDetails = "Transferred " + request.getAmount() + " tokens from " + request.getFromEmail() + " to " + request.getToEmail();
