@@ -8,13 +8,15 @@ import com.ledger.repository.AccountRepository;
 import com.ledger.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class LedgerService {
-
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
@@ -55,13 +57,39 @@ public class LedgerService {
         }
     }
 
+    public String listTransactions(String email) {
+        Optional<Account> accountOpt = accountRepository.findByEmail(email);
+
+        if (accountOpt.isPresent()) {
+            Account account = accountOpt.get();
+
+            List<Transaction> transactions = transactionRepository.findByFromAccountOrToAccount(account, account);
+
+            return transactions.stream()
+                    .map(transaction -> "Transaction ID: " + transaction.getId() +
+                            ", From: " + transaction.getFromAccount().getEmail() +
+                            ", To: " + transaction.getToAccount().getEmail() +
+                            ", Amount: " + transaction.getAmount() +
+                            ", Details: " + transaction.getDetails())
+                    .collect(Collectors.joining("\n"));
+        } else {
+            return "Account not found";
+        }
+    }
+
     public int getBalance(String email) {
         Optional<Account> accountOpt = accountRepository.findByEmail(email);
         return accountOpt.map(Account::getBalance).orElse(-1);
     }
 
+    @Transactional
     public String deleteAccount(String email) {
-        if (accountRepository.existsByEmail(email)) {
+        Optional<Account> accountOpt = accountRepository.findByEmail(email);
+
+        if (accountOpt.isPresent()) {
+            Account account = accountOpt.get();
+
+            transactionRepository.deleteByFromAccountOrToAccount(account, account);
             accountRepository.deleteByEmail(email);
             return "Account deleted";
         } else {

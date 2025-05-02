@@ -23,6 +23,11 @@ public class LedgerController {
         return ledgerService.transferTokens(request);
     }
 
+    @GetMapping("/list_transactions/{email}")
+    public String listTransactions(@PathVariable String email) {
+        return ledgerService.listTransactions(email);
+    }
+
     @GetMapping("/get_balance/{email}")
     public int getBalance(@PathVariable String email) {
         return ledgerService.getBalance(email);
